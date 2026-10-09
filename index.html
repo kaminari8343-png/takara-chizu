@@ -1,0 +1,647 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>たからさがし ちず</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="たからさがし">
+<meta name="theme-color" content="#2B6F8E">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Yusei+Magic&family=Zen+Maru+Gothic:wght@500;700;900&display=swap">
+<style>
+/* 海図のような「羊皮紙」と「インク」と「海」の3色で作っています */
+:root{
+  --sea:#2B6F8E;
+  --sea-deep:#1D4E66;
+  --sea-light:#BFE3EE;
+  --parch:#F6E7C4;
+  --parch-dark:#E7CF9C;
+  --ink:#4A2E1A;
+  --ink-soft:#7A5A3E;
+  --red:#D2442F;
+  --gold:#F4B63A;
+  --ok:#2E9E5B;
+  --card:#FFF8E6;
+  --display:"Yusei Magic","Zen Maru Gothic","Hiragino Maru Gothic ProN",sans-serif;
+  --body:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Yu Gothic",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  font-family:var(--body);font-weight:500;color:var(--ink);
+  background:var(--sea);
+  background-image:radial-gradient(circle at 20% 10%,rgba(255,255,255,.12) 0 2px,transparent 3px),radial-gradient(circle at 70% 60%,rgba(255,255,255,.10) 0 2px,transparent 3px);
+  background-size:60px 60px,90px 90px;
+  -webkit-tap-highlight-color:transparent;
+  -webkit-user-select:none;user-select:none;
+}
+input,textarea{-webkit-user-select:text;user-select:text}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer;touch-action:manipulation}
+:focus-visible{outline:4px solid var(--gold);outline-offset:3px}
+.app{max-width:720px;margin:0 auto;padding:16px;padding-top:max(16px,env(safe-area-inset-top));padding-bottom:max(32px,env(safe-area-inset-bottom));min-height:100%;display:flex;flex-direction:column;gap:18px}
+[hidden]{display:none!important}
+
+/* 羊皮紙の紙 */
+.paper{background:var(--parch);border-radius:20px;padding:20px;box-shadow:0 6px 0 var(--sea-deep),inset 0 0 40px rgba(122,90,62,.25);position:relative}
+.paper::after{content:"";position:absolute;inset:8px;border:2px dashed rgba(122,90,62,.35);border-radius:14px;pointer-events:none}
+
+h1,h2,h3{font-family:var(--display);font-weight:400;margin:0;line-height:1.3;text-wrap:balance}
+.title{color:#fff;font-size:clamp(34px,9vw,52px);text-align:center;text-shadow:0 3px 0 var(--sea-deep)}
+.title small{display:block;font-family:var(--body);font-size:15px;font-weight:700;text-shadow:none;opacity:.85;margin-top:4px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:3px solid var(--ink);border-radius:18px;background:var(--card);padding:12px 18px;font-weight:900;font-size:17px;box-shadow:0 5px 0 var(--ink);min-height:54px;transition:transform .08s,box-shadow .08s}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
+.btn.big{font-family:var(--display);font-weight:400;font-size:clamp(24px,6.5vw,32px);padding:16px 22px;min-height:76px;width:100%}
+.btn.red{background:var(--red);color:#fff}
+.btn.gold{background:var(--gold)}
+.btn.green{background:var(--ok);color:#fff}
+.btn.ghost{background:transparent;box-shadow:none;border-style:dashed}
+.btn.small{font-size:14px;min-height:44px;padding:8px 12px;box-shadow:0 3px 0 var(--ink)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.stack{display:flex;flex-direction:column;gap:12px}
+.muted{color:var(--ink-soft);font-size:14px;line-height:1.7;margin:0}
+
+/* ホーム */
+.hunts{display:grid;gap:12px}
+.hunt{display:flex;align-items:center;gap:12px;background:var(--card);border:3px solid var(--ink);border-radius:16px;padding:12px 14px;text-align:left;box-shadow:0 4px 0 var(--ink)}
+.hunt .x{flex:none;width:44px;height:44px;border-radius:50%;background:var(--parch-dark);display:grid;place-items:center;font-family:var(--display);font-size:22px;color:var(--red)}
+.hunt b{display:block;font-size:17px}
+.hunt span{font-size:13px;color:var(--ink-soft)}
+.hunt[aria-current="true"]{background:#FFF0C2;border-color:var(--red)}
+.parent{align-self:center;position:relative;overflow:hidden;background:rgba(255,255,255,.15);color:#fff;border:2px solid rgba(255,255,255,.6);border-radius:999px;padding:10px 20px;font-weight:700;font-size:14px}
+.parent i{position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(255,255,255,.35)}
+
+/* 地図のすじ */
+.mapwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:16px;background:var(--sea-light);border:3px solid var(--ink)}
+.mapwrap svg{display:block;margin:0 auto}
+
+/* ヒント */
+.step-label{font-weight:900;color:var(--red);letter-spacing:.08em;font-size:15px}
+.hint-text{font-family:var(--display);font-size:clamp(26px,7vw,36px);line-height:1.6;margin:0}
+.hint-photo{width:100%;max-height:44vh;object-fit:cover;border-radius:14px;border:3px solid var(--ink)}
+.extra{background:#fff;border:2px solid var(--ink-soft);border-radius:14px;padding:12px 14px;font-size:20px;line-height:1.6;font-weight:700}
+
+/* あいことば */
+.symbols{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.sym{aspect-ratio:1;border:3px solid var(--ink);border-radius:16px;background:#fff;font-size:clamp(34px,10vw,52px);display:grid;place-items:center;padding:0;box-shadow:0 4px 0 var(--ink);line-height:1}
+.sym[aria-pressed="true"]{background:var(--gold)}
+.sym.wrong{animation:shake .4s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.result{font-family:var(--display);font-size:24px;text-align:center;margin:0;min-height:1.5em}
+.result.ng{color:var(--red)}
+.result.ok{color:var(--ok)}
+
+/* クリア */
+.clear{text-align:center;align-items:center}
+.chest{width:min(70vw,280px);height:auto}
+.chest .lid{transform-origin:40px 92px;transform-box:view-box;animation:lid 1.2s .3s ease-out forwards}
+@keyframes lid{to{transform:rotate(-38deg)}}
+.chest .shine{opacity:0;animation:shine 1s 1s forwards}
+@keyframes shine{to{opacity:1}}
+.confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:5}
+.confetti b{position:absolute;top:-20px;width:12px;height:18px;border-radius:3px;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+.treasure-msg{font-family:var(--display);font-size:clamp(26px,7vw,34px);line-height:1.6;margin:0}
+
+/* おうちのひと画面 */
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-weight:900;font-size:14px}
+.field input,.field textarea{border:2px solid var(--ink-soft);border-radius:12px;padding:10px 12px;background:#fff;font-size:17px;width:100%;min-width:0}
+.field textarea{min-height:70px;resize:vertical;line-height:1.6}
+.step-card{background:var(--card);border:3px solid var(--ink);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.step-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.step-head h3{font-size:22px;color:var(--red)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:2px solid var(--ink-soft);background:#fff;border-radius:999px;padding:6px 10px;font-size:13px;font-weight:700}
+.symbols.mini{grid-template-columns:repeat(6,1fr);gap:6px}
+.symbols.mini .sym{font-size:26px;border-width:2px;box-shadow:none;border-radius:12px}
+.photo-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.photo-row img{width:96px;height:96px;object-fit:cover;border-radius:12px;border:2px solid var(--ink)}
+.filebtn{position:relative;overflow:hidden}
+.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.toast{position:fixed;left:50%;bottom:max(24px,env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 20px;border-radius:999px;font-weight:700;z-index:10}
+
+/* いんさつ用カード（画面では見えない） */
+#printArea{display:none}
+@media print{
+  @page{size:A4;margin:12mm}
+  body{background:#fff}
+  .app,.toast,.confetti{display:none!important}
+  #printArea{display:grid;grid-template-columns:1fr 1fr;gap:10mm}
+  .pcard{border:3px dashed #4A2E1A;border-radius:8mm;height:85mm;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4mm;break-inside:avoid;font-family:var(--body);color:#4A2E1A}
+  .pcard .e{font-size:44mm;line-height:1}
+  .pcard .t{font-size:7mm;font-weight:900}
+  .pcard .n{font-size:4mm}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.chest .lid{transform:rotate(-38deg)}.chest .shine{opacity:1}}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<div id="printArea"></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+"use strict";
+
+/* ===== あいことばの えらびかた ===== */
+const SYMBOLS = ["🍎","🐶","🐱","⭐","🚀","🌈","🍙","🚗","🐟","🌻","🦖","🎈"];
+const SYMBOL_NAMES = {"🍎":"りんご","🐶":"いぬ","🐱":"ねこ","⭐":"ほし","🚀":"ロケット","🌈":"にじ","🍙":"おにぎり","🚗":"くるま","🐟":"さかな","🌻":"ひまわり","🦖":"きょうりゅう","🎈":"ふうせん"};
+
+/* ヒントの おてほん（おうちのひと用） */
+const HINT_IDEAS = [
+  "つめたい ところを さがせ",
+  "ごはんを たべる ところの いすの した",
+  "ねる ところの まくらの ちかく",
+  "くつが ならんでいる ところ",
+  "ほんが いっぱい ある ところ",
+  "おふろの まえの たな",
+  "テレビの うしろを のぞいてみよう",
+  "あおい ものの なか"
+];
+
+/* ===== ほぞん（このiPadの中だけ） ===== */
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); }catch{ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch{ return false; } }
+};
+
+const EXAMPLE = {
+  id:"example", example:true,
+  title:"はじめての たからさがし（れい）",
+  treasure:"たからは おふとんの なか！ さがしてみよう",
+  steps:[
+    {hint:"ごはんを たべる ところ。いすの したを みてごらん", extra:"テーブルの ちかくだよ", photo:"", symbol:"🍎"},
+    {hint:"つめたい はこの とびらに なにかが あるよ", extra:"れいぞうこ だよ", photo:"", symbol:"🐟"},
+    {hint:"ねる まえに はを みがく ところ", extra:"せんめんじょの かがみの まわり", photo:"", symbol:"⭐"}
+  ]
+};
+
+let hunts = store.get("tc-hunts", []);
+if(!Array.isArray(hunts)) hunts = [];
+let progress = store.get("tc-progress", null); // {huntId, step, startedAt, extra:[]}
+let selectedId = store.get("tc-selected", hunts[0] ? hunts[0].id : "example");
+
+function allHunts(){ return hunts.concat([EXAMPLE]); }
+function findHunt(id){ return allHunts().find(h => h.id === id) || null; }
+function saveHunts(){
+  if(!store.set("tc-hunts", hunts)){ toast("ほぞんできませんでした。しゃしんを へらしてください"); return false; }
+  return true;
+}
+function saveProgress(){ store.set("tc-progress", progress); }
+
+/* ===== こまかい どうぐ ===== */
+const app = document.getElementById("app");
+function h(tag, attrs, ...kids){
+  const el = document.createElement(tag);
+  if(attrs) for(const [k,v] of Object.entries(attrs)){
+    if(v == null || v === false) continue;
+    if(k === "class") el.className = v;
+    else if(k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else if(k === "html") el.innerHTML = v;
+    else el.setAttribute(k, v === true ? "" : v);
+  }
+  for(const kid of kids.flat()){
+    if(kid == null || kid === false) continue;
+    el.appendChild(typeof kid === "string" ? document.createTextNode(kid) : kid);
+  }
+  return el;
+}
+let toastTimer;
+function toast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, 2600);
+}
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* こえ */
+function speak(text){
+  if(!("speechSynthesis" in window) || !text) return;
+  try{
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "ja-JP"; u.rate = 0.9; u.pitch = 1.1;
+    speechSynthesis.speak(u);
+  }catch{}
+}
+/* おと（ファイルなしで その場で つくる） */
+let actx;
+function tone(seq){
+  try{
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    let t = actx.currentTime;
+    for(const [f, d] of seq){
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = "triangle"; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.25, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+      o.connect(g).connect(actx.destination); o.start(t); o.stop(t + d + 0.05);
+      t += d * 0.85;
+    }
+  }catch{}
+}
+const SND_OK = [[523,.14],[659,.14],[784,.14],[1047,.32]];
+const SND_NG = [[220,.22],[180,.3]];
+const SND_WIN = [[523,.12],[659,.12],[784,.12],[1047,.18],[784,.12],[1047,.5]];
+
+/* ===== 地図のすじ（SVG） ===== */
+function mapStrip(total, current){
+  const gap = 96, W = Math.max(330, total * gap + 140), H = 150;
+  const pts = [];
+  for(let i = 0; i < total; i++) pts.push({x: 60 + i * gap, y: i % 2 ? 98 : 60});
+  const end = {x: 60 + total * gap + 10, y: total % 2 ? 98 : 60};
+  const all = pts.concat([end]);
+  let d = `M${all[0].x} ${all[0].y}`;
+  for(let i = 1; i < all.length; i++){
+    const a = all[i-1], b = all[i], mx = (a.x + b.x) / 2;
+    d += ` C${mx} ${a.y} ${mx} ${b.y} ${b.x} ${b.y}`;
+  }
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${total}この しまの うち ${Math.min(current+1,total)}ばんめ">`;
+  s += `<g fill="#fff" opacity=".5"><path d="M20 130q10-6 20 0t20 0" stroke="#fff" stroke-width="3" fill="none"/><path d="M${W-90} 24q10-6 20 0t20 0" stroke="#fff" stroke-width="3" fill="none"/></g>`;
+  s += `<path d="${d}" fill="none" stroke="#4A2E1A" stroke-width="4" stroke-dasharray="2 10" stroke-linecap="round"/>`;
+  pts.forEach((p, i) => {
+    const done = i < current, now = i === current;
+    s += `<ellipse cx="${p.x}" cy="${p.y+10}" rx="34" ry="14" fill="#9FD3E2"/>`;
+    s += `<ellipse cx="${p.x}" cy="${p.y}" rx="30" ry="20" fill="${done ? "#F4B63A" : "#F6E7C4"}" stroke="#4A2E1A" stroke-width="3"/>`;
+    if(!now) s += `<path d="M${p.x-8} ${p.y-14}l0-18M${p.x-8} ${p.y-32}l14 6-14 6" stroke="#4A2E1A" stroke-width="3" fill="${done ? "#D2442F" : "none"}" stroke-linejoin="round"/>`;
+    s += `<text x="${p.x+6}" y="${p.y+8}" font-family="Zen Maru Gothic,sans-serif" font-weight="900" font-size="20" fill="#4A2E1A" text-anchor="middle">${i+1}</text>`;
+    if(now){
+      s += `<g transform="translate(${p.x+2} ${p.y-44}) scale(.8)"><g><path d="M-26 22h52l-8 12h-36z" fill="#7A3E1E" stroke="#4A2E1A" stroke-width="3" stroke-linejoin="round"/><path d="M0 22v-40" stroke="#4A2E1A" stroke-width="3"/><path d="M2-16q22 12 0 34z" fill="#fff" stroke="#4A2E1A" stroke-width="3" stroke-linejoin="round"/>${reduceMotion ? "" : `<animateTransform attributeName="transform" type="translate" values="0 0;0 -5;0 0" dur="1.6s" repeatCount="indefinite"/>`}</g></g>`;
+    }
+  });
+  s += `<g transform="translate(${end.x} ${end.y})"><path d="M-16-16l32 32M16-16l-32 32" stroke="#D2442F" stroke-width="9" stroke-linecap="round"/></g>`;
+  s += `</svg>`;
+  return s;
+}
+
+/* ===== がめん: ホーム ===== */
+function renderHome(){
+  app.textContent = "";
+  const sel = findHunt(selectedId) || EXAMPLE;
+  selectedId = sel.id;
+  const resuming = progress && progress.huntId === sel.id && progress.step > 0;
+
+  app.append(
+    h("h1", {class:"title"}, "たからさがし ちず", h("small", null, "ヒントを よんで いえの なかの おたからを さがそう")),
+    h("div", {class:"paper stack"},
+      h("div", {class:"mapwrap", html: mapStrip(sel.steps.length, resuming ? progress.step : -1)}),
+      h("h2", {style:"font-size:26px"}, sel.title),
+      h("p", {class:"muted"}, `しまは ${sel.steps.length}こ。ぜんぶ まわると おたからの ばしょが わかるよ。`),
+      h("button", {class:"btn big red", onclick: () => startHunt(sel.id, false)}, resuming ? "つづきから ぼうけん" : "ぼうけんに でる！"),
+      resuming ? h("button", {class:"btn small ghost", onclick: () => startHunt(sel.id, true)}, "さいしょから やりなおす") : null
+    )
+  );
+
+  if(allHunts().length > 1){
+    const list = h("div", {class:"hunts"});
+    allHunts().forEach(hu => {
+      list.append(h("button", {class:"hunt", "aria-current": hu.id === sel.id ? "true" : "false", onclick: () => { selectedId = hu.id; store.set("tc-selected", selectedId); renderHome(); }},
+        h("span", {class:"x"}, "✕"),
+        h("div", null, h("b", null, hu.title), h("span", null, `しま ${hu.steps.length}こ`))
+      ));
+    });
+    app.append(h("div", {class:"stack"}, h("h2", {style:"color:#fff;font-size:22px"}, "ほかの ぼうけん"), list));
+  }
+
+  // おうちのひとボタン：ながおし 1.5びょう（子どもが まちがえて ひらかないように）
+  const fill = h("i");
+  const pbtn = h("button", {class:"parent", "aria-label":"おうちのひと：1.5びょう ながおし"}, fill, "おうちのひと（ながおし）");
+  let timer = null, t0 = 0, raf = 0;
+  const startHold = (e) => {
+    e.preventDefault(); t0 = performance.now();
+    const tick = (t) => {
+      const k = Math.min(1, (t - t0) / 1500); fill.style.width = (k * 100) + "%";
+      if(k >= 1){ stopHold(); renderParentHome(); return; }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+  };
+  const stopHold = () => { cancelAnimationFrame(raf); fill.style.width = "0"; };
+  pbtn.addEventListener("pointerdown", startHold);
+  ["pointerup","pointerleave","pointercancel"].forEach(ev => pbtn.addEventListener(ev, stopHold));
+  pbtn.addEventListener("contextmenu", e => e.preventDefault());
+  app.append(pbtn);
+}
+
+/* ===== がめん: あそぶ ===== */
+function startHunt(id, restart){
+  if(restart || !progress || progress.huntId !== id){
+    progress = {huntId:id, step:0, startedAt:Date.now(), extra:[]};
+    saveProgress();
+  }
+  renderPlay();
+}
+
+function renderPlay(){
+  const hunt = findHunt(progress.huntId);
+  if(!hunt){ progress = null; saveProgress(); return renderHome(); }
+  if(progress.step >= hunt.steps.length) return renderClear(hunt);
+  const step = hunt.steps[progress.step];
+  app.textContent = "";
+  window.scrollTo(0, 0);
+
+  const extraShown = progress.extra.includes(progress.step);
+  const extraBox = h("div", {class:"extra", hidden: !extraShown}, "もうひとつ ヒント： ", step.extra || "");
+  const result = h("p", {class:"result", "aria-live":"polite"});
+  const symGrid = h("div", {class:"symbols"});
+  SYMBOLS.forEach(sym => {
+    const b = h("button", {class:"sym", "aria-label": SYMBOL_NAMES[sym]}, sym);
+    b.onclick = () => {
+      if(sym === step.symbol){
+        b.setAttribute("aria-pressed", "true");
+        result.className = "result ok"; result.textContent = "せいかい！ つぎの しまへ";
+        tone(SND_OK); speak("せいかい！");
+        symGrid.querySelectorAll("button").forEach(x => x.disabled = true);
+        setTimeout(() => { progress.step++; saveProgress(); renderPlay(); }, 1300);
+      }else{
+        b.classList.remove("wrong"); void b.offsetWidth; b.classList.add("wrong");
+        result.className = "result ng"; result.textContent = "ちがうみたい。カードを よく みてね";
+        tone(SND_NG);
+      }
+    };
+    symGrid.append(b);
+  });
+  const answerPaper = h("div", {class:"paper", hidden:true},
+    h("div", {class:"stack"},
+      h("h3", {style:"font-size:24px;text-align:center"}, "カードの えは どれ？"),
+      symGrid, result
+    )
+  );
+
+  const hintSpeech = step.hint + (extraShown && step.extra ? "。もうひとつ ヒント。" + step.extra : "");
+
+  app.append(
+    h("div", {class:"row", style:"justify-content:space-between"},
+      h("button", {class:"btn small", onclick: renderHome}, "← もどる"),
+      h("span", {style:"color:#fff;font-weight:900"}, `しま ${progress.step + 1} / ${hunt.steps.length}`)
+    ),
+    h("div", {class:"mapwrap", html: mapStrip(hunt.steps.length, progress.step)}),
+    h("div", {class:"paper stack"},
+      h("span", {class:"step-label"}, `${progress.step + 1}ばんめの ヒント`),
+      step.photo ? h("img", {class:"hint-photo", src: step.photo, alt:"ヒントの しゃしん"}) : null,
+      h("p", {class:"hint-text"}, step.hint || "（ヒントが まだ ありません）"),
+      extraBox,
+      h("div", {class:"row"},
+        h("button", {class:"btn", onclick: () => speak(step.hint + (progress.extra.includes(progress.step) && step.extra ? "。もうひとつ ヒント。" + step.extra : ""))}, "🔊 よんで"),
+        step.extra ? h("button", {class:"btn", hidden: extraShown, onclick: (e) => {
+          progress.extra.push(progress.step); saveProgress();
+          extraBox.hidden = false; e.currentTarget.hidden = true; speak("もうひとつ ヒント。" + step.extra);
+        }}, "💡 もうひとつ ヒント") : null
+      )
+    ),
+    h("button", {class:"btn big gold", onclick: (e) => {
+      e.currentTarget.hidden = true; answerPaper.hidden = false;
+      answerPaper.scrollIntoView({behavior: reduceMotion ? "auto" : "smooth", block:"start"});
+      speak("みつけた カードの えを おしてね");
+    }}, "カードを みつけた！"),
+    answerPaper
+  );
+
+  setTimeout(() => speak(hintSpeech), 400);
+}
+
+/* ===== がめん: クリア ===== */
+function renderClear(hunt){
+  app.textContent = "";
+  window.scrollTo(0, 0);
+  const secs = Math.round((Date.now() - progress.startedAt) / 1000);
+  const mins = Math.floor(secs / 60), rest = secs % 60;
+  const timeText = mins > 0 ? `${mins}ぷん ${rest}びょう` : `${rest}びょう`;
+  const helps = progress.extra.length;
+
+  const chest = `<svg class="chest" viewBox="0 0 240 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <g class="shine"><g stroke="#F4B63A" stroke-width="6" stroke-linecap="round"><path d="M120 40V8"/><path d="M80 50L62 24"/><path d="M160 50l18-26"/><path d="M50 74L22 62"/><path d="M190 74l28-12"/></g>
+    <circle cx="96" cy="96" r="12" fill="#FFD95A" stroke="#4A2E1A" stroke-width="3"/><circle cx="124" cy="90" r="12" fill="#FFD95A" stroke="#4A2E1A" stroke-width="3"/><circle cx="150" cy="98" r="12" fill="#FFD95A" stroke="#4A2E1A" stroke-width="3"/><path d="M108 82l8-12 8 12-8 6z" fill="#7FD1F0" stroke="#4A2E1A" stroke-width="3"/></g>
+    <rect x="40" y="100" width="160" height="80" rx="10" fill="#A0582B" stroke="#4A2E1A" stroke-width="5"/>
+    <path d="M40 130h160" stroke="#4A2E1A" stroke-width="4"/><rect x="108" y="118" width="24" height="30" rx="4" fill="#F4B63A" stroke="#4A2E1A" stroke-width="4"/>
+    <path d="M60 100v80M180 100v80" stroke="#7A3E1E" stroke-width="8"/>
+    <g class="lid"><path d="M40 100v-24c0-22 30-36 80-36s80 14 80 36v24z" fill="#B8693A" stroke="#4A2E1A" stroke-width="5" stroke-linejoin="round"/><path d="M60 100V58M180 100V58" stroke="#7A3E1E" stroke-width="8"/></g>
+  </svg>`;
+
+  app.append(
+    h("div", {class:"paper stack clear"},
+      h("h1", {style:"font-size:clamp(32px,9vw,44px);color:var(--red)"}, "ぜんぶの しまを まわった！"),
+      h("div", {html: chest}),
+      h("p", {class:"muted", style:"font-size:16px"}, "おたからの ばしょは…"),
+      h("p", {class:"treasure-msg"}, hunt.treasure || "おうちのひとに きいてみよう！"),
+      h("p", {class:"muted"}, `かかった じかん：${timeText}　／　もうひとつヒント：${helps}かい`),
+      h("button", {class:"btn", onclick: () => speak("おたからの ばしょは。" + (hunt.treasure || ""))}, "🔊 よんで"),
+      h("button", {class:"btn big green", onclick: () => { progress = null; saveProgress(); renderHome(); }}, "おうちに かえる")
+    )
+  );
+  tone(SND_WIN);
+  setTimeout(() => speak("やったね！ おたからの ばしょは。" + (hunt.treasure || "")), 900);
+  if(!reduceMotion){
+    const c = h("div", {class:"confetti"});
+    const colors = ["#F4B63A","#D2442F","#2E9E5B","#2B6F8E","#fff"];
+    for(let i = 0; i < 60; i++){
+      const b = h("b");
+      b.style.left = Math.random() * 100 + "%";
+      b.style.background = colors[i % colors.length];
+      b.style.animationDuration = (2.5 + Math.random() * 2.5) + "s";
+      b.style.animationDelay = (Math.random() * 1.2) + "s";
+      c.append(b);
+    }
+    document.body.append(c);
+    setTimeout(() => c.remove(), 6500);
+  }
+}
+
+/* ===== がめん: おうちのひと（いちらん） ===== */
+function renderParentHome(){
+  app.textContent = "";
+  window.scrollTo(0, 0);
+  const list = h("div", {class:"hunts"});
+  hunts.forEach(hu => {
+    list.append(h("button", {class:"hunt", onclick: () => renderEditor(hu.id)},
+      h("span", {class:"x"}, "✎"),
+      h("div", null, h("b", null, hu.title), h("span", null, `しま ${hu.steps.length}こ ・ タップで へんしゅう`))
+    ));
+  });
+  app.append(
+    h("div", {class:"row", style:"justify-content:space-between"},
+      h("button", {class:"btn small", onclick: renderHome}, "← こどもの がめんへ"),
+      h("span", {style:"color:#fff;font-weight:900"}, "おうちのひと")
+    ),
+    h("div", {class:"paper stack"},
+      h("h2", {style:"font-size:26px"}, "ぼうけんを つくる"),
+      h("p", {class:"muted"},
+        "1. ヒントを書き、それぞれの場所に「あいことばカード」を置きます。", h("br"),
+        "2. お子さんはヒントを頼りに場所を探し、カードの絵をアプリで選びます。", h("br"),
+        "3. 全部正解すると、最後に「おたからの場所」が表示されます。本物のおたから（おかしなど）はそこに隠しておいてください。"
+      ),
+      h("button", {class:"btn red", onclick: () => {
+        const hu = {id: "h" + Date.now().toString(36), title:"あたらしい ぼうけん", treasure:"", steps:[{hint:"", extra:"", photo:"", symbol: SYMBOLS[0]}]};
+        hunts.unshift(hu); saveHunts(); renderEditor(hu.id);
+      }}, "＋ あたらしい ぼうけんを つくる"),
+      hunts.length ? list : h("p", {class:"muted"}, "まだ ありません。「れい」を見本にして作ってみてください。"),
+      h("button", {class:"btn small ghost", onclick: () => {
+        const copy = JSON.parse(JSON.stringify(EXAMPLE));
+        copy.id = "h" + Date.now().toString(36); copy.example = false; copy.title = "はじめての たからさがし";
+        hunts.unshift(copy); saveHunts(); renderEditor(copy.id);
+      }}, "「れい」を コピーして つくる")
+    )
+  );
+}
+
+/* ===== がめん: おうちのひと（へんしゅう） ===== */
+function renderEditor(id){
+  const hunt = hunts.find(x => x.id === id);
+  if(!hunt) return renderParentHome();
+  app.textContent = "";
+
+  const persist = () => saveHunts();
+
+  const titleIn = h("input", {id:"f-title", value: hunt.title, maxlength:"30"});
+  titleIn.oninput = () => { hunt.title = titleIn.value; persist(); };
+  const treasureIn = h("textarea", {id:"f-treasure", placeholder:"れい：たからは おふとんの なか！"});
+  treasureIn.value = hunt.treasure || "";
+  treasureIn.oninput = () => { hunt.treasure = treasureIn.value; persist(); };
+
+  const stepsBox = h("div", {class:"stack"});
+  hunt.steps.forEach((st, i) => stepsBox.append(stepCard(hunt, st, i)));
+
+  app.append(
+    h("div", {class:"row", style:"justify-content:space-between"},
+      h("button", {class:"btn small", onclick: renderParentHome}, "← いちらん"),
+      h("span", {style:"color:#fff;font-weight:900"}, "へんしゅう（じどうで ほぞん）")
+    ),
+    h("div", {class:"paper stack"},
+      h("div", {class:"field"}, h("label", {for:"f-title"}, "ぼうけんの なまえ"), titleIn),
+      h("p", {class:"muted"}, "ヒントは、お子さんが読めるように ひらがな で書くのがおすすめです。「🔊よんで」で読み上げもできます。")
+    ),
+    stepsBox,
+    h("button", {class:"btn", onclick: () => {
+      const used = hunt.steps.map(s => s.symbol);
+      const free = SYMBOLS.find(s => !used.includes(s)) || SYMBOLS[0];
+      hunt.steps.push({hint:"", extra:"", photo:"", symbol: free}); persist(); renderEditor(id);
+      setTimeout(() => window.scrollTo(0, document.body.scrollHeight), 50);
+    }}, "＋ しまを ふやす"),
+    h("div", {class:"paper stack"},
+      h("div", {class:"field"}, h("label", {for:"f-treasure"}, "さいごに でる「おたからの ばしょ」"), treasureIn),
+      h("p", {class:"muted"}, "ここに書いた場所に、本物のおたからを隠しておいてください。")
+    ),
+    h("div", {class:"paper stack"},
+      h("h3", {style:"font-size:22px"}, "じゅんび"),
+      h("p", {class:"muted"}, "あいことばカードを印刷して、各しまの場所に置きます。手書きでカードを作ってもOKです。"),
+      h("button", {class:"btn gold", onclick: () => printCards(hunt)}, "🖨 あいことばカードを いんさつ"),
+      h("button", {class:"btn red", onclick: () => { selectedId = hunt.id; store.set("tc-selected", selectedId); progress = null; saveProgress(); renderHome(); }}, "この ぼうけんで あそぶ")
+    ),
+    deleteBlock(hunt)
+  );
+}
+
+function stepCard(hunt, st, i){
+  const persist = () => saveHunts();
+  const hintIn = h("textarea", {id:`f-hint-${i}`, placeholder:"れい：つめたい ところを さがせ"});
+  hintIn.value = st.hint; hintIn.oninput = () => { st.hint = hintIn.value; persist(); };
+  const extraIn = h("input", {id:`f-extra-${i}`, value: st.extra || "", placeholder:"れい：れいぞうこ だよ"});
+  extraIn.oninput = () => { st.extra = extraIn.value; persist(); };
+
+  const chips = h("div", {class:"chips"});
+  HINT_IDEAS.forEach(idea => chips.append(h("button", {class:"chip", type:"button", onclick: () => { st.hint = idea; hintIn.value = idea; persist(); }}, idea)));
+
+  const symGrid = h("div", {class:"symbols mini", role:"radiogroup", "aria-label":"あいことば"});
+  SYMBOLS.forEach(sym => {
+    const b = h("button", {class:"sym", type:"button", role:"radio", "aria-label": SYMBOL_NAMES[sym], "aria-pressed": sym === st.symbol ? "true" : "false"}, sym);
+    b.onclick = () => { st.symbol = sym; persist(); symGrid.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b ? "true" : "false")); };
+    symGrid.append(b);
+  });
+
+  const preview = h("img", {src: st.photo || "", alt:"", hidden: !st.photo});
+  const removePhoto = h("button", {class:"btn small ghost", type:"button", hidden: !st.photo, onclick: () => { st.photo = ""; persist(); preview.hidden = true; removePhoto.hidden = true; }}, "しゃしんを けす");
+  const fileIn = h("input", {type:"file", accept:"image/*", "aria-label":"しゃしんを えらぶ"});
+  fileIn.onchange = async () => {
+    const f = fileIn.files && fileIn.files[0]; if(!f) return;
+    try{
+      st.photo = await shrinkPhoto(f);
+      if(!persist()){ st.photo = ""; return; }
+      preview.src = st.photo; preview.hidden = false; removePhoto.hidden = false;
+    }catch{ toast("しゃしんを よみこめませんでした"); }
+    fileIn.value = "";
+  };
+
+  const up = h("button", {class:"btn small", type:"button", disabled: i === 0, "aria-label":"うえへ", onclick: () => { move(hunt, i, -1); }}, "↑");
+  const down = h("button", {class:"btn small", type:"button", disabled: i === hunt.steps.length - 1, "aria-label":"したへ", onclick: () => { move(hunt, i, 1); }}, "↓");
+  const del = h("button", {class:"btn small ghost", type:"button", disabled: hunt.steps.length <= 1, onclick: () => {
+    hunt.steps.splice(i, 1); persist(); renderEditor(hunt.id);
+  }}, "けす");
+
+  return h("div", {class:"step-card"},
+    h("div", {class:"step-head"}, h("h3", null, `しま ${i + 1}`), h("div", {class:"row"}, up, down, del)),
+    h("div", {class:"field"}, h("label", {for:`f-hint-${i}`}, "ヒント"), hintIn),
+    h("details", null, h("summary", {style:"font-size:13px;font-weight:700;cursor:pointer"}, "ヒントの おてほんを つかう"), chips),
+    h("div", {class:"field"}, h("label", {for:`f-extra-${i}`}, "もうひとつ ヒント（こまったとき用・なくてもOK）"), extraIn),
+    h("div", {class:"field"},
+      h("label", null, "ヒントの しゃしん（なくてもOK）"),
+      h("div", {class:"photo-row"}, preview, h("span", {class:"btn small filebtn"}, "📷 しゃしんを えらぶ", fileIn), removePhoto),
+      h("p", {class:"muted", style:"font-size:12px"}, "場所の一部だけを撮ると、ちょうどいい難しさになります。")
+    ),
+    h("div", {class:"field"}, h("label", null, "あいことば（この場所に置くカードの絵）"), symGrid)
+  );
+}
+
+function move(hunt, i, dir){
+  const j = i + dir; if(j < 0 || j >= hunt.steps.length) return;
+  [hunt.steps[i], hunt.steps[j]] = [hunt.steps[j], hunt.steps[i]];
+  saveHunts(); renderEditor(hunt.id);
+}
+
+function deleteBlock(hunt){
+  let armed = false, t;
+  const b = h("button", {class:"btn small ghost", style:"align-self:center;color:#fff;border-color:rgba(255,255,255,.6)"}, "この ぼうけんを けす");
+  b.onclick = () => {
+    if(!armed){ armed = true; b.textContent = "もういちど おすと けします"; t = setTimeout(() => { armed = false; b.textContent = "この ぼうけんを けす"; }, 3000); return; }
+    clearTimeout(t);
+    hunts = hunts.filter(x => x.id !== hunt.id); saveHunts();
+    if(progress && progress.huntId === hunt.id){ progress = null; saveProgress(); }
+    if(selectedId === hunt.id){ selectedId = hunts[0] ? hunts[0].id : "example"; store.set("tc-selected", selectedId); }
+    toast("けしました"); renderParentHome();
+  };
+  return b;
+}
+
+/* しゃしんを ちいさくして ほぞん（iPadの ようりょうを つかいすぎないため） */
+function shrinkPhoto(file){
+  return new Promise((ok, ng) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const max = 720, k = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      ok(c.toDataURL("image/jpeg", 0.72));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); ng(); };
+    img.src = url;
+  });
+}
+
+/* あいことばカードを いんさつ */
+function printCards(hunt){
+  const area = document.getElementById("printArea");
+  area.textContent = "";
+  hunt.steps.forEach((st, i) => {
+    area.append(h("div", {class:"pcard"},
+      h("div", {class:"t"}, "あいことば"),
+      h("div", {class:"e"}, st.symbol),
+      h("div", {class:"n"}, `${hunt.title}　しま ${i + 1}`)
+    ));
+  });
+  setTimeout(() => window.print(), 100);
+}
+
+renderHome();
+})();
+</script>
+</body>
+</html>
